@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1" />
+    <title>What is OpenStreetMap</title>
+    <!-- unsemantic -->
+    <!--[if lt IE 9]>
+  <script src="./assets/javascripts/html5.js"></script>
+<![endif]-->
+<link rel="stylesheet" href="./assets/stylesheets/demo.css" />
+<link rel="stylesheet" href="./assets/stylesheets/unsemantic-grid-base.css" />
+<noscript>
+  <link rel="stylesheet" href="./assets/stylesheets/unsemantic-grid-mobile.css" />
+</noscript>
+<script>
+  var ADAPT_CONFIG = {
+    path: './assets/stylesheets/',
+    dynamic: true,
+    range: [
+      '0 to 767px = unsemantic-grid-mobile.css',
+      '767px = unsemantic-grid-desktop.css'
+    ]
+  };
+</script>
+<script src="./assets/javascripts/adapt.min.js"></script>
+<!-- end of unsemantic -->
+
+    <style type="text/css">
+        .item{
+            width: 400px;
+        }
+        .map {
+            height: 400px;
+            width: 100%;
+        }
+        pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+        #geojson {
+            width:100%;
+            height:390px;
+            overflow:scroll;
+        }
+        #results {
+            height: 300px;
+            overflow: scroll;
+        }
+        table {
+            border-collapse:collapse;
+        }
+        table,th, td {
+            border: 1px solid black;
+        }
+    </style>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+    <script src="OSMBuildings-Leaflet.js"></script>
+    <script src="TileLayer.GeoJSON.js"></script>
+</head>
+<body>
+    <div class="grid-container">
+
+<div class="grid-100">
+    <h2>What is OpenStreetMap?</h2>
+</div>
+
+<div class="grid-50">
+    <div id="watercolor" class="map"></div>
+    <h3>Art</h3>
+</div>
+
+<div class="grid-50">
+    <div id="3dmap" class="map"></div>
+    <h3>3D Buildings</h3>
+</div>
+
+<div class="grid-50">
+    <div id="outdoors" class="map"></div>
+    <h3>Topographic Maps</h3>
+</div>
+
+<div class="grid-50">
+    <div id="language" class="map"></div>
+    <h3>Multilingual</h3>
+</div>
+
+<div class="grid-50">
+    <pre id="geojson"></pre>
+    <h3>GeoJson</h3>
+</div>
+
+<div class="grid-50">
+    <div id="geojsonmap" class="map"></div>
+    <h3>GeoJson</h3>
+</div>
+
+<div class="grid-50">
+    <h3>Search</h3>
+    <div id="search" style="height:400px">
+        <input type="text" name="addr" value="" id="addr" size="70"></input>
+        <button type="button" onclick="addr_search();">Search</button>
+        <table id="results"></table>
+    </div>
+
+</div>
+
+<div class="grid-50">
+    <div id="routing" class="map"></div>
+    <h3>Routing</h3>
+</div>
+
+<div class="grid-50">
+<iframe src="http://www.openstreetmap.org/stats/data_stats.html" style="height:400px;width:100%"></iframe>
+</div>
+
+<div class="grid-100">
+    Map Data by <a target="_top" href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.
+</div>
+
+</div>
+
+<script>
+var map3d = new L.Map('3dmap', { zoomControl:false }).setView([37.7943, -122.3992], 16);
+L.tileLayer('http://b.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+}).addTo(map3d);
+var osmb = new OSMBuildings(map3d).loadData();
+
+var watercolor = new L.Map('watercolor', { zoomControl:false }).setView([37.7943, -122.3992], 11);
+L.tileLayer('http://a.tile.stamen.com/watercolor/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a target="_top" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.',
+    maxZoom: 18
+}).addTo(watercolor);
+
+var outdoors = new L.Map('outdoors', { zoomControl:false }).setView([38.8568, -120.15], 12);
+L.tileLayer('http://a.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png', {
+    attribution: 'Map tiles by <a href="http://www.thunderforest.com"/>Thunderforest</a>.',
+    maxZoom: 18
+}).addTo(outdoors);
+
+var outdoors = new L.Map('language', { zoomControl:false }).setView([34.7783, 127.6544], 8);
+L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+}).addTo(outdoors);
+
+
+var geojsonmap = new L.Map('geojsonmap', { zoomControl:false }).setView([37.7943, -122.3992], 15);
+  var style = {
+        "clickable": true,
+        "color": "#00D",
+        "fillColor": "#00D",
+        "weight": 1.0,
+        "opacity": 0.3,
+        "fillOpacity": 0.2
+    };
+    var hoverStyle = {
+        "fillOpacity": 0.5
+    };
+
+    var geojsonURL = 'http://tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json';
+    var geojsonTileLayer = new L.TileLayer.GeoJSON(geojsonURL, {
+            clipTiles: true,
+            attribution : 'Vector tiles from <a href="http://openstreetmap.us/~migurski/vector-datasource/">openstreetmap.us</a>',
+            unique: function (feature) {
+                return feature.id; 
+            }
+        }, {
+            style: style,
+            onEachFeature: function (feature, layer) {
+                if (feature.properties) {
+                    var popupString = '<div class="popup">';
+                    for (var k in feature.properties) {
+                        var v = feature.properties[k];
+                        popupString += k + ': ' + v + '<br />';
+                    }
+                    popupString += '</div>';
+                    layer.bindPopup(popupString);
+                }
+                if (!(layer instanceof L.Point)) {
+                    layer.on('mouseover', function () {
+                        layer.setStyle(hoverStyle);
+                    });
+                    layer.on('mouseout', function () {
+                        layer.setStyle(style);
+                    });
+                }
+            }
+        }
+    );
+    geojsonmap.addLayer(geojsonTileLayer);
+
+function syntaxHighlight(json) {
+    json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+                cls = 'key';
+            } else {
+                cls = 'string';
+            }
+        } else if (/true|false/.test(match)) {
+            cls = 'boolean';
+        } else if (/null/.test(match)) {
+            cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+    });
+}
+
+request = new XMLHttpRequest;
+request.open('GET', '16-10487-25327.json', true);
+request.onload = function() {
+  if (request.status >= 200 && request.status < 400){
+    var data = JSON.parse(request.responseText)
+    var str = JSON.stringify(data, undefined, 4);
+    geojson.innerHTML = syntaxHighlight(str);
+  }
+}
+request.send();
+
+function addr_search() {
+    var inp = document.getElementById("addr");
+
+    searchRequest = new XMLHttpRequest;
+    searchRequest.open('GET', 'http://nominatim.openstreetmap.org/search?format=json&limit=10&q=' + inp.value, true)
+    searchRequest.onload = function() {
+        if (searchRequest.status >= 200 && searchRequest.status < 400){
+            var searchResponse = JSON.parse(searchRequest.responseText);
+            for (var i = 0; i < searchResponse.length; i++) {
+                var r = searchResponse[i];
+                console.log(r);
+                var row = results.insertRow();
+                var c0 = row.insertCell(0);
+                var c1 = row.insertCell(1);
+                var c2 = row.insertCell(2);
+                c0.innerHTML = '<img src="' + r['icon'] + '" />';
+                c1.innerHTML = r['display_name'];
+                c2.innerHTML = r['lat'] + "," + r['lon'];
+            };
+//            results.innerHTML = syntaxHighlight(JSON.stringify(searchResponse, undefined, 4));
+        }
+    }
+    searchRequest.send();
+}
+</script>
+
+</body>
+</html>
