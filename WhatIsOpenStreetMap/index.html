@@ -42,9 +42,8 @@
         .null { color: magenta; }
         .key { color: red; }
         #geojson {
-            width:100%;
-            height:390px;
             overflow:scroll;
+            height: 380px;
         }
         #results {
             height: 300px;
@@ -89,14 +88,32 @@
     <h3>Multilingual</h3>
 </div>
 
+<div class="grid-100">
+    <h2>GeoJson</h2>
+</div>
+
 <div class="grid-50">
-    <pre id="geojson"></pre>
-    <h3>GeoJson</h3>
+    <pre id="geojson" class="map"></pre>
 </div>
 
 <div class="grid-50">
     <div id="geojsonmap" class="map"></div>
-    <h3>GeoJson</h3>
+</div>
+
+<div class="grid-100">
+    <h3>Routing</h3>
+    <div id="routingBar" style="width:25%;height=400px;float:left">
+        <form id="routingForm">
+        <input type="text" name="start" id="start" size="30"></input>
+        to
+        <input type="text" name="end" id="end" size="30"></input>
+        <button type="button" onclick="directions_search();">Directions</button>
+        </form>
+        <table style="overflow:scroll" id="directions">
+        </table>
+    </div>
+    <div id="routingMap" class="map" style="width:75%"></div>
+    <p>Directions Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png"></p>
 </div>
 
 <div class="grid-50">
@@ -106,12 +123,6 @@
         <button type="button" onclick="addr_search();">Search</button>
         <table id="results"></table>
     </div>
-
-</div>
-
-<div class="grid-50">
-    <div id="routing" class="map"></div>
-    <h3>Routing</h3>
 </div>
 
 <div class="grid-50">
@@ -143,11 +154,17 @@ L.tileLayer('http://a.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(outdoors);
 
-var outdoors = new L.Map('language', { zoomControl:false }).setView([34.7783, 127.6544], 8);
+var language = new L.Map('language', { zoomControl:false }).setView([34.7783, 127.6544], 8);
 L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
-}).addTo(outdoors);
+}).addTo(language);
 
+var routeMap = new L.Map('routingMap', { zoomControl:false }).setView([0, 0], 2);
+L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+}).addTo(routeMap);
+
+var routeLayer = L.featureGroup().addTo(routeMap);
 
 var geojsonmap = new L.Map('geojsonmap', { zoomControl:false }).setView([37.7943, -122.3992], 15);
   var style = {
@@ -226,28 +243,106 @@ request.send();
 
 function addr_search() {
     var inp = document.getElementById("addr");
-
-    searchRequest = new XMLHttpRequest;
-    searchRequest.open('GET', 'http://nominatim.openstreetmap.org/search?format=json&limit=10&q=' + inp.value, true)
-    searchRequest.onload = function() {
-        if (searchRequest.status >= 200 && searchRequest.status < 400){
-            var searchResponse = JSON.parse(searchRequest.responseText);
-            for (var i = 0; i < searchResponse.length; i++) {
+    search(inp.value, 10, function(searchResponse){
+        while(results.rows.length > 0) {
+            results.deleteRow(0);
+        }
+        for (var i = 0; i < searchResponse.length; i++) {
                 var r = searchResponse[i];
-                console.log(r);
-                var row = results.insertRow();
+                var row = results.insertRow(-1);
                 var c0 = row.insertCell(0);
                 var c1 = row.insertCell(1);
                 var c2 = row.insertCell(2);
-                c0.innerHTML = '<img src="' + r['icon'] + '" />';
-                c1.innerHTML = r['display_name'];
-                c2.innerHTML = r['lat'] + "," + r['lon'];
-            };
-//            results.innerHTML = syntaxHighlight(JSON.stringify(searchResponse, undefined, 4));
+                var c3 = row.insertCell(3);
+                if(r['icon']) {
+                    c0.innerHTML = '<img src="' + r['icon'] + '" />';
+                }
+                c1.innerHTML = r['type'];
+                c2.innerHTML = r['display_name'];
+                c3.innerHTML = r['lat'] + "," + r['lon'];
+        };
+    });
+}
+
+
+function search(query, limit, callback) {
+    searchRequest = new XMLHttpRequest;
+    searchRequest.open('GET', 'http://nominatim.openstreetmap.org/search?format=json&limit=' + limit + '&q=' + query, true);
+    searchRequest.onload = function() {
+        if (searchRequest.status >= 200 && searchRequest.status < 400){
+            var searchResponse = JSON.parse(searchRequest.responseText);
+            callback(searchResponse);
         }
     }
     searchRequest.send();
 }
+
+
+function directions_search() {
+    var startField = document.getElementById("start");
+    var endField = document.getElementById("end");
+    search(startField.value, 1, function(startResponse) {
+        if(startResponse.size == 0) {
+
+        } else {
+            routeLayer.clearLayers();
+            var startLoc = startResponse[0];
+            search(endField.value, 1, function(endResponse){
+                if(endResponse.size == 0 ) {
+
+                } else {
+                    var endLoc = endResponse[0];
+                    var key = "Fmjtd%7Cluur216yll%2Ca0%3Do5-90tlqy";
+                    var url = "http://open.mapquestapi.com/directions/v2/route?key=" + key +
+                        "&from=" + startLoc['lat'] + "," + startLoc['lon'] +
+                        "&to=" + endLoc['lat'] + "," + endLoc['lon'] +
+                        "&callback=handleDirectionResponse&destinationManeuverDisplay=true"
+                    directionsRequest = new XMLHttpRequest;
+                    directionsRequest.open('GET', url, true);
+                    directionsRequest.onload = function() {
+                        if (directionsRequest.status >= 200 && directionsRequest.status < 400){
+                            eval(directionsRequest.responseText);
+                        }
+                    }
+                    directionsRequest.send();
+                }
+            });
+        }
+    });
+}
+
+
+function handleDirectionResponse(directions) {
+    var directionsTable = document.getElementById("directions");
+    while(directionsTable.rows.length > 0) {
+        directionsTable.deleteRow(0);
+    }
+
+    var legs = directions['route']['legs'];
+    for (var l = 0; l < legs.length; l++) {
+        var leg = legs[l];
+        var points = [];
+        var maneuvers = leg['maneuvers'];
+        for (var i = 0; i < maneuvers.length; i++) {
+            var m = maneuvers[i];
+            var point = m['startPoint'];
+            points[i] = L.latLng(point['lat'], point['lng']);
+            var marker = L.marker(points[i]);
+            marker.bindPopup(m['narrative']);
+            routeLayer.addLayer(marker);
+
+            var row = directionsTable.insertRow(-1);
+            var c0 = row.insertCell(0);
+            c0.innerHTML = '<img src="' + m['iconUrl'] + '"></img>';
+            var c1 = row.insertCell(1);
+            c1.innerHTML = m['narrative'];
+        };
+        var polyline = L.polyline(points, {color: 'red'});
+        routeLayer.addLayer(polyline);
+        routeMap.fitBounds(routeLayer.getBounds());
+    }
+}
+
 </script>
 
 </body>
