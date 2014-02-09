@@ -136,37 +136,38 @@
 </div>
 
 <script>
-var map3d = new L.Map('3dmap', { zoomControl:false }).setView([37.7943, -122.3992], 16);
+var mapOptions = { zoomControl:false, scrollWheelZoom:false };
+var map3d = new L.Map('3dmap', mapOptions).setView([37.7943, -122.3992], 16);
 L.tileLayer('http://b.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(map3d);
 var osmb = new OSMBuildings(map3d).loadData();
 
-var watercolor = new L.Map('watercolor', { zoomControl:false }).setView([37.7943, -122.3992], 11);
+var watercolor = new L.Map('watercolor', mapOptions).setView([37.7943, -122.3992], 11);
 L.tileLayer('http://a.tile.stamen.com/watercolor/{z}/{x}/{y}.png', {
     attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a target="_top" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>.',
     maxZoom: 18
 }).addTo(watercolor);
 
-var outdoors = new L.Map('outdoors', { zoomControl:false }).setView([38.8568, -120.15], 12);
+var outdoors = new L.Map('outdoors', mapOptions).setView([38.8568, -120.15], 12);
 L.tileLayer('http://a.tile.thunderforest.com/outdoors/{z}/{x}/{y}.png', {
     attribution: 'Map tiles by <a href="http://www.thunderforest.com"/>Thunderforest</a>.',
     maxZoom: 18
 }).addTo(outdoors);
 
-var language = new L.Map('language', { zoomControl:false }).setView([34.7783, 127.6544], 8);
+var language = new L.Map('language', mapOptions).setView([34.7783, 127.6544], 8);
 L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(language);
 
-var routeMap = new L.Map('routingMap', { zoomControl:false }).setView([0, 0], 2);
+var routeMap = new L.Map('routingMap', mapOptions).setView([0, 0], 2);
 L.tileLayer('http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(routeMap);
 
 var routeLayer = L.featureGroup().addTo(routeMap);
 
-var geojsonmap = new L.Map('geojsonmap', { zoomControl:false }).setView([37.7943, -122.3992], 15);
+var geojsonmap = new L.Map('geojsonmap', mapOptions).setView([37.7943, -122.3992], 15);
   var style = {
         "clickable": true,
         "color": "#00D",
